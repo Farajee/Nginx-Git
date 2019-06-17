@@ -1,0 +1,59 @@
+---
+    - hosts: sabaweb
+      become: yes
+      become_user: root
+      tasks:
+      - name: Update Nginx to Latest Version
+        apt:
+          name: nginx
+          state: latest
+      - name: Create a directory if it does not exist
+        file:
+          path: /home/sabaweb/site/
+          state: directory
+          mode: '0755'    
+      - name: Create Virtual Host Configuration File
+        file:
+          path: /etc/nginx/sites-available/saba
+          state: touch
+      - name: Add Configuration to saba
+        lineinfile:
+          path: /etc/nginx/sites-available/saba
+          line: "server {
+
+                listen 80;
+
+                listen [::]:80;
+
+                root /home/sabaweb/site;
+
+                index index.html index.htm;
+
+
+                server_name sabaweb.com www.sabaweb.com;
+
+
+        location / {
+
+                try_files $uri $uri/ =404;
+        
+                }
+
+}
+"
+      
+      - name: Create a symbolic link
+        file:
+          src: /etc/nginx/sites-available/saba
+          dest: /etc/nginx/sites-enabled/saba    
+          state: link
+          owner: root
+          group: root 
+          mode: 0644
+
+      - name: Pull Repository From Gitlab
+        git:
+          repo: http://git.sabaos.com/web/sabaos.git
+          dest: /home/sabaweb/site/ 
+          update: yes
+          version: master
